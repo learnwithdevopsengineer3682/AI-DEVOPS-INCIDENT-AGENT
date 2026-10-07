@@ -1,0 +1,39 @@
+services:
+  taskflow-db:
+    image: postgres:17-alpine
+    container_name: taskflow-db
+    environment:
+      POSTGRES_DB: taskflow
+      POSTGRES_USER: taskflow
+      POSTGRES_PASSWORD: taskflow-demo-password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U taskflow -d taskflow"]
+      interval: 3s
+      timeout: 2s
+      retries: 20
+    networks:
+      - taskflow-net
+
+  taskflow-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: taskflow-api
+    environment:
+      DB_HOST: ${DB_HOST:-taskflow-db}
+      DB_PORT: "5432"
+      DB_NAME: taskflow
+      DB_USER: taskflow
+      DB_PASSWORD: taskflow-demo-password
+      DB_POOL_MAX: "3"
+    ports:
+      - "8000:8000"
+    depends_on:
+      taskflow-db:
+        condition: service_healthy
+    networks:
+      - taskflow-net
+
+networks:
+  taskflow-net:
+    name: taskflow-net
